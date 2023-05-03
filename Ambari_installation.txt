@@ -1,5 +1,6 @@
                                  *****************AMBARI_INSTALLATION ***************
-
+				 
+pdf link - https://drive.google.com/file/d/1J0P4PdETpxU3yUT44tVICxxPpQFTXzcp/view?usp=share_link
 
 CREATE 3 machine (1-cluster,2-node)
 
