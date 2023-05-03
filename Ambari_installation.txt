@@ -1,0 +1,79 @@
+                                 *****************AMBARI_INSTALLATION ***************
+
+
+CREATE 3 machine (1-cluster,2-node)
+
+On all-machine:-
+—---------------------
+--> set hostname 
+[root@localhost]# hostnamectl set-hostname cluster,node1,node2
+
+--> install enable and start httpd
+[root@silver-node1 ~]# yum install httpd
+[root@silver-node1 ~]# systemctl enable httpd.service
+[root@silver-node1 ~]# systemctl start httpd		
+[root@silver-node1 ~]# systemctl status httpd
+
+--> set ip in host file like this
+[root@silver-node1 ambari]# vi /etc/hosts
+                            192.168.0.1 SILVER-NODE1
+                            192.168.0.2 SILVER-NODE2
+                            192.168.0.3 SILVER-NODE3
+
+--> Make sure all node ping to each other
+
+On cluster:-
+—---------------
+--> Create a directory in html file 
+[root@silver-node1 ~]# cd /var/www/html/
+[root@silver-node1 html]# mkdir ambari
+
+--> Copy  ambari,hdp,& hdp-utils tar file in created path 
+--> untar the file
+[root@silver-node1 ambari]# tar -xvf ambari-2.7.3.0-centos7.tar.gz
+
+--> copy repo file in yum.repos.d path
+[root@silver-node1 ambari]# cp /var/www/html/ambari/ambari/centos7/2.7.3.0-139/ambari.repo /etc/yum.repos.d/
+
+--> create repofile 
+createrepo ‘untar filename’
+
+--> Edit in ambari.repo file(writ e ambari file path in baseurl)
+[root@silver-node1 yum.repos.d]# vi /etc/yum.repos.d/ambari.repo
+	baseurl=http://cluster/ambari/ambari/centos7/2.7.3.0-139			    # Write path	
+
+--> Do same as above in hdp.repo file (here edit hdp path and hdp-utils path)
+[root@silver-node1 yum.repos.d]# vi /etc/yum.repos.d/hdp.repo
+	baseurl=http://cluster/hdp/HDP/centos7/3.1.0.0-78
+	baseurl=http://cluster/hdp-utils/HDP-UTILS/centos7/1.1.0.22
+
+-->check repolist
+[root@cluster~]#yum repolist
+
+--> Copy ambari.repo file on other both node in same path
+[root@cluster ~]# rsync /etc/yum.repos.d/ambari.repo root@node1:/etc/yum.repos.d/ambari
+.repo 
+[root@cluster ~]# rsync /etc/yum.repos.d/ambari.repo root@node2:/etc/yum.repos.d/ambari
+.repo
+ 
+-->install,setup,start&check status ambari-server
+[root@silver-node1 ambari]# yum install ambari-sever
+[root@silver-node1 ambari]# ambari-server setup -s
+[root@silver-node1 ambari]# ambari-server start
+[root@silver-node1 ambari]# ambari-server status
+
+--> Install start and check status ambari-agent
+[root@silver-node1 ambari]# yum install -y ambari-agent            ("install on all machine")
+[root@silver-node1 ambari]# ambari-agent start
+[root@silver-node1 ambari]# ambari-agent status
+	
+--> Edit this file(Write in hostname=’cluster hostname’ on all machine )
+[root@silver-node1 ambari]# vi /etc/ambari-agent/conf/ambari-agent.ini
+	hostname=cluster
+
+--> restart all services (httpd,ambari-server,amabri-agent,)
+--> stop firewall
+
+--> Go to browser and type:-cluster:8080/#/login
+	Id-admin
+	Password-admin
