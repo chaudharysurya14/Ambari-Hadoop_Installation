@@ -1,0 +1,106 @@
+#!/bin/bash
+
+# Repository Update
+sudo apt-get update
+
+# Host key checking
+touch $HOME/.ssh/config ; echo -e \ "Host *\n StrictHostKeyChecking no\n  UserKnownHostsFile=/dev/null" \n > ~/.ssh/config
+ 
+# Key Generation and Authorization
+echo -e 'y/n' | ssh-keygen -t rsa -P "" -f $HOME/.ssh/id_rsa
+cat $HOME/.ssh/id_rsa.pub >> $HOME/.ssh/authorized_keys
+
+# Downloading And Installing Java
+sudo apt-get install openjdk-8-jdk -y
+
+# Downloading And Installing Hadoop-1.2.1
+wget http://archive.apache.org/dist/hadoop/common/hadoop-1.2.1/hadoop-1.2.1.tar.gz -P ~/Downloads
+sudo tar -xzf ~/Downloads/hadoop-1.2.1.tar.gz -C /usr/local/
+sudo mv /usr/local/hadoop-1.2.1 /usr/local/hadoop
+
+sudo chown -R ubuntu:ubuntu /usr/local/hadoop
+
+#Configuring bashrc linux env setup
+
+cat >> $HOME/.bashrc <<EOL
+#HADOOP ENV START #
+export HADOOP_PREFIX=/usr/local/hadoop/
+export PATH=$PATH:$HADOOP_PREFIX/bin
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export PATH=$PATH:$JAVA_HOME
+#HADOOP ENV END #
+EOL
+
+#Setting hadoop env
+
+sudo su -c 'cat >> /usr/local/hadoop/conf/hadoop-env.sh <<EOL
+
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export HADOOP_OPTS=-Djava.net.preferIPV4Stack=true
+EOL'
+
+#Configuring core-site.xml
+
+sudo sed -i '/<configuration>/,/<\/configuration>/d' /usr/local/hadoop/conf/core-site.xml
+
+sudo su -c 'cat >> /usr/local/hadoop/conf/core-site.xml <<EOL
+<configuration>
+<property>
+<name>fs.default.name</name>
+<value>hdfs://localhost:9000</value>
+</property>
+
+<property>
+<name>hadoop.tmp.dir</name>
+<value>/usr/local/hadoop/tmp</value>
+</property>
+</configuration>
+EOL'
+
+sudo mkdir /usr/local/hadoop/tmp
+sudo chown -R ubuntu:ubuntu /usr/local/hadoop/tmp
+
+#Configuring hdfs-site.xml
+
+sudo sed -i '/<configuration>/,/<\/configuration>/d' /usr/local/hadoop/conf/hdfs-site.xml
+
+sudo su -c 'cat >> /usr/local/hadoop/conf/hdfs-site.xml <<EOL
+<configuration>
+<property>
+<name>dfs.replication</name>
+<value>1</value>
+</property>
+</configuration>
+EOL'
+
+#Configuring mapred-site.xml
+
+sudo sed -i '/<configuration>/,/<\/configuration>/d' /usr/local/hadoop/conf/mapred-site.xml 
+
+sudo su -c 'cat >> /usr/local/hadoop/conf/mapred-site.xml <<EOL
+<configuration>
+<property>
+<name>mapred.job.tracker</name>
+<value>hdfs://localhost:9001</value>
+</property>
+</configuration>
+EOL'
+
+# Execute bash
+
+source ~/.bashrc
+
+# Formatting namenode
+
+/usr/local/hadoop/bin/hadoop namenode -format
+
+# Start dfs daemons
+/usr/local/hadoop/bin/start-dfs.sh
+
+# Start mapred daemons
+/usr/local/hadoop/bin/start-mapred.sh
+
+# check daemons start or not using jps
+jps | sort
+
+
